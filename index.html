@@ -307,27 +307,24 @@
 
         try {
             const targetUrl = 'https://api.football-data.org/v4/teams/90/matches?status=FINISHED';
-            // Proxy especializado que reenvía intacta la cabecera X-Auth-Token
-            const proxyUrl = 'https://thingproxy.freeboard.io/fetch/' + targetUrl;
+            // Usamos api.allorigins.win en modo proxy seguro para saltar el bloqueo de CORS
+            const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl + '&X-Auth-Token=' + API_KEY)}`;
 
-            const response = await fetch(proxyUrl, {
-                method: 'GET',
-                headers: {
-                    'X-Auth-Token': API_KEY
-                }
-            });
-
-            if (response.status === 403) {
-                throw new Error("403 Forbidden: La API no ha aceptado la clave a través del proxy.");
-            }
+            const response = await fetch(proxyUrl);
 
             if (!response.ok) {
-                throw new Error(`Error de servidor (${response.status})`);
+                throw new Error(`Error de conexión (${response.status})`);
             }
 
-            const data = await response.json();
-            const partidosAPI = data.matches || [];
+            const rawData = await response.json();
+            // AllOrigins devuelve los datos de la API dentro de la propiedad .contents
+            const data = JSON.parse(rawData.contents);
+    
+            if (data.errorCode || data.message) {
+            throw new Error(data.message || "Error en la clave o petición de la API");
+            }
 
+            const partidosAPI = data.matches || [];
             let actualizados = 0;
 
             partidos.forEach(p => {
@@ -344,7 +341,7 @@
                         p.p = true;
 
                         const inputB = document.getElementById(`b${p.j}`);
-                        const inputR = document.getElementById(`r${p.j}`);
+                        const inputR = document.getElementById(`r${p.j}`);    
                         if (inputB) inputB.value = golesBetis;
                         if (inputR) inputR.value = golesRival;
 
@@ -359,14 +356,14 @@
                 miChart.data.datasets[0].data = calc();
                 miChart.update();
             }
-    
+
             alert(`¡Sincronización completada! Se han actualizado ${actualizados} jornadas de Liga.`);
 
         } catch (error) {
             console.error("Error al actualizar marcadores:", error);
             alert("Error de conexión: " + error.message);
         } finally {
-            if (btn) {
+           if (btn) {
                 btn.innerText = "🔄 Actualizar";
                 btn.disabled = false;
             }
