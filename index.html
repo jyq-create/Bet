@@ -297,7 +297,9 @@
 
 
     async function actualizarDesdeAPI() {
-        const API_KEY = 'be302266866d4c2b9941da34f4841507';
+        // ⚠️ PEGA AQUÍ EXACTAMENTE LA URL QUE TE DIO CLOUDFLARE:
+        const PROXY_URL = 'https://bet.jyqlatino.workers.dev/'; 
+    
         const btn = document.getElementById('btnActualizarAPI');
     
         if (btn) {
@@ -306,25 +308,15 @@
         }
 
         try {
-            const targetUrl = 'https://api.football-data.org/v4/teams/90/matches?status=FINISHED';
-            // Usamos api.allorigins.win en modo proxy seguro para saltar el bloqueo de CORS
-            const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl + '&X-Auth-Token=' + API_KEY)}`;
-
-            const response = await fetch(proxyUrl);
+            const response = await fetch(PROXY_URL);
 
             if (!response.ok) {
-                throw new Error(`Error de conexión (${response.status})`);
+                throw new Error(`Error del servidor (${response.status})`);
             }
 
-            const rawData = await response.json();
-            // AllOrigins devuelve los datos de la API dentro de la propiedad .contents
-            const data = JSON.parse(rawData.contents);
-    
-            if (data.errorCode || data.message) {
-            throw new Error(data.message || "Error en la clave o petición de la API");
-            }
-
+            const data = await response.json();
             const partidosAPI = data.matches || [];
+
             let actualizados = 0;
 
             partidos.forEach(p => {
@@ -341,7 +333,7 @@
                         p.p = true;
 
                         const inputB = document.getElementById(`b${p.j}`);
-                        const inputR = document.getElementById(`r${p.j}`);    
+                        const inputR = document.getElementById(`r${p.j}`);
                         if (inputB) inputB.value = golesBetis;
                         if (inputR) inputR.value = golesRival;
 
@@ -363,7 +355,7 @@
             console.error("Error al actualizar marcadores:", error);
             alert("Error de conexión: " + error.message);
         } finally {
-           if (btn) {
+            if (btn) {
                 btn.innerText = "🔄 Actualizar";
                 btn.disabled = false;
             }
